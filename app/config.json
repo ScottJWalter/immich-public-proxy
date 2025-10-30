@@ -12,10 +12,11 @@
     "allowSlugLinks": true,
     "showHomePage": true,
     "showGalleryTitle": false,
-    "showMetadata": {
-      "description": false
-    },
-    "customInvalidResponse": false
+     "showMetadata": {
+       "description": false
+     },
+     "customInvalidResponse": false,
+     "enableRssFeeds": true
   },
   "lightGallery": {
     "controls": true,

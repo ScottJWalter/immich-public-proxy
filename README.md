@@ -50,6 +50,7 @@ surface even further. The only things that the proxy can access are photos that 
 
 - Supports sharing photos and videos.
 - Supports password-protected shares.
+- RSS feed support for automated consumption and feed readers.
 - If sharing a single image, by default the link will directly open the image file so that you can embed it anywhere you would a normal image. (This is configurable.)
 - All usage happens through Immich - you won't need to touch this app after the initial configuration.
 
@@ -155,6 +156,7 @@ Alternatively, you can [pass the configuration inline](docs/inline-configuration
 | `showGalleryTitle`      | `bool`   | Show a title on the gallery page.                                                                                                                                                                                                                                 |
 | `allowDownloadAll`      | `int`    | Allow visitors to download all files as a zip.<br>`0` disable downloads<br>`1` follow Immich setting per share ([example](https://github.com/user-attachments/assets/79ea8c08-71ce-42ab-b025-10aec384938a))<br>`2` always allowed                                 |
 | `allowSlugLinks`        | `bool`   | Enable/disable the custom URL links.                                                                                                                                                                                                                              |
+| `enableRssFeeds`        | `bool`   | Enable/disable RSS feed generation for shared galleries.                                                                                                                                                                                                          |
 | `showHomePage`          | `bool`   | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                                                                                                                                                               |
 | `showMetadata`          | `object` | See the [Metadata](#metadata) section below.                                                                                                                                                                                                                      |
 | `customInvalidResponse` | various  | Send a custom response instead of the default 404 - see [Custom responses](docs/custom-responses.md) for more details.                                                                                                                                            |

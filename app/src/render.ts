@@ -199,6 +199,71 @@ class Render {
   }
 
   /**
+   * Generate RSS XML feed for a SharedLink
+   */
+  async rss (res: Response, share: SharedLink) {
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || (res.req.protocol + '://' + res.req.headers.host)
+    const feedUrl = `${publicBaseUrl}/share/${share.key}/rss`
+    const galleryUrl = `${publicBaseUrl}/share/${share.key}`
+
+    // Build RSS items from assets
+    const items = share.assets.map(asset => {
+      const itemUrl = asset.type === AssetType.video
+        ? immich.videoUrl(share.key, asset.id)
+        : immich.photoUrl(share.key, asset.id, ImageSize.original)
+
+      const fullItemUrl = publicBaseUrl + itemUrl
+      const thumbnailUrl = publicBaseUrl + immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
+
+      // Get description from EXIF or use filename
+      const description = asset.exifInfo?.description
+        ? `<![CDATA[${asset.exifInfo.description}]]>`
+        : (asset.originalFileName || `Asset ${asset.id}`)
+
+      // Format date for RSS (RFC 822 format)
+      const pubDate = asset.fileCreatedAt
+        ? new Date(asset.fileCreatedAt).toUTCString()
+        : new Date().toUTCString()
+
+      return `    <item>
+      <title><![CDATA[${asset.originalFileName || `Asset ${asset.id}`}]]></title>
+      <description>${description}</description>
+      <link>${fullItemUrl}</link>
+      <guid>${fullItemUrl}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <enclosure url="${fullItemUrl}" type="${asset.originalMimeType || 'application/octet-stream'}" length="0"/>
+      <media:thumbnail url="${thumbnailUrl}"/>
+      <media:content url="${fullItemUrl}" type="${asset.originalMimeType || 'application/octet-stream'}"/>
+    </item>`
+    }).join('\n')
+
+    // Get the most recent asset date for lastBuildDate
+    const lastBuildDate = share.assets
+      .filter(asset => asset.fileCreatedAt)
+      .sort((a, b) => new Date(b.fileCreatedAt!).getTime() - new Date(a.fileCreatedAt!).getTime())[0]
+      ?.fileCreatedAt
+
+    const lastBuildDateRss = lastBuildDate
+      ? new Date(lastBuildDate).toUTCString()
+      : new Date().toUTCString()
+
+    const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title><![CDATA[${this.title(share)}]]></title>
+    <description><![CDATA[Photo gallery shared via Immich Public Proxy]]></description>
+    <link>${galleryUrl}</link>
+    <atom:link href="${feedUrl}" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>${lastBuildDateRss}</lastBuildDate>
+    <generator>Immich Public Proxy</generator>
+${items}
+  </channel>
+</rss>`
+
+    return rssXml
+  }
+
+  /**
    * Generate a filename for the downloaded asset based on the configuration option chosen
    */
   getFilename (asset: Asset) {

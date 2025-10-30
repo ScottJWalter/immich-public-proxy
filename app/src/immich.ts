@@ -314,6 +314,53 @@ class Immich {
   getKeyTypeFromShare (shareType: string) {
     return shareType === 's' ? KeyType.slug : KeyType.key
   }
+
+  /**
+   * Handle an incoming request for RSS feed of a shared link.
+   */
+  async handleRssRequest (request: IncomingShareRequest, res: Response) {
+    addResponseHeaders(res)
+
+    // Check that the key is a valid format
+    if (!immich.isKey(request.key)) {
+      respondToInvalidRequest(res, 404, 'Wrong key format ' + request.key)
+      return
+    }
+
+    // Get information about the shared link via Immich API
+    const sharedLinkRes = await immich.getShareByKey(request.key, request.password, request.keyType || KeyType.key)
+    if (!sharedLinkRes.valid) {
+      respondToInvalidRequest(res, 404, 'Invalid request')
+      return
+    }
+
+    // Password required - RSS feeds don't support interactive password entry
+    if (sharedLinkRes.passwordRequired) {
+      respondToInvalidRequest(res, 401, 'Password required for RSS feed')
+      return
+    }
+
+    if (!sharedLinkRes.link) {
+      respondToInvalidRequest(res, 404, 'Unknown error with key ' + request.key)
+      return
+    }
+
+    const link = sharedLinkRes.link
+
+    // Make sure there are some photo/video assets for this link
+    if (!link.assets.length) {
+      respondToInvalidRequest(res, 404, 'No assets found for RSS feed')
+      return
+    }
+
+    // Set RSS-specific headers
+    res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, max-age=300') // Cache for 5 minutes
+
+    // Generate and send RSS feed
+    const rssContent = await render.rss(res, link)
+    res.send(rssContent)
+  }
 }
 
 const immich = new Immich()

@@ -107,9 +107,33 @@ app.post('/share/unlock', async (req, res) => {
 })
 
 /*
- * [ROUTE] This is the direct link to a photo or video asset
- */
-app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, res) => {
+  * [ROUTE] RSS feed for a shared link
+  */
+ app.get('/:shareType(share|s)/:key/rss', decodeCookie, async (req, res) => {
+   if (!getConfigOption('ipp.enableRssFeeds', true)) {
+     respondToInvalidRequest(res, 404, 'RSS feeds are disabled in config.json')
+     return
+   }
+
+   const keyType = immich.getKeyTypeFromShare(req.params.shareType)
+
+   if (keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)) {
+     // Slug type links are not allowed
+     respondToInvalidRequest(res, 404, 'Slug links are disabled in config.json')
+   } else {
+     await immich.handleRssRequest({
+       req,
+       key: req.params.key,
+       keyType,
+       password: req.password
+     }, res)
+   }
+ })
+
+ /*
+  * [ROUTE] This is the direct link to a photo or video asset
+  */
+ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, res) => {
   // Add the headers configured in config.json (most likely `cache-control`)
   addResponseHeaders(res)
 
